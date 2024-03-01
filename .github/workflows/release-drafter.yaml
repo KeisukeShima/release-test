@@ -45,7 +45,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   update_pyproject_version:
-    if: github.event_name == "pull_request"
+    if: ${{ github.event_name == "pull_request" }}
     runs-on: ubuntu-latest
     needs: update_release_draft
     steps:
