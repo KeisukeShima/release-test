@@ -25,6 +25,8 @@ jobs:
       # otherwise, read permission is required at least
       pull-requests: write
     runs-on: ubuntu-latest
+    outputs:
+      new-version: ${{ steps.release-drafter.outputs.resolved_version }}
     steps:
       # (Optional) GitHub Enterprise requires GHE_HOST variable set
       #- name: Set GHE_HOST
@@ -32,7 +34,8 @@ jobs:
       #    echo "GHE_HOST=${GITHUB_SERVER_URL##https:\/\/}" >> $GITHUB_ENV
 
       # Drafts your next Release notes as Pull Requests are merged into "master"
-      - uses: release-drafter/release-drafter@v6
+      - id: release-drafter
+        uses: release-drafter/release-drafter@v6
         # (Optional) specify config name to use, relative to .github/. Default: release-drafter.yml
         with:
           commitish: main
@@ -40,3 +43,15 @@ jobs:
         #   disable-autolabeler: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update_pyproject_version:
+    if: github.event_name == "pull_request"
+    runs-on: ubuntu-latest
+    needs: update_release_draft
+    steps:
+      - env:
+        NEW_VERSION: ${{ needs.update_release_draft.outputs.new-version }}
+      - name: update version
+        run: |
+          sed -i 's/^version = "[0-9.]*"/version = "$NEW_VERSION"/' pyproject.toml
+      - uses: stefanzweifel/git-auto-commit-action@v5
